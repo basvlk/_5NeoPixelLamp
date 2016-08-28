@@ -1,7 +1,7 @@
 
 /**
    test comment
-  This is NeoPixelStick control program with the  generic serial control V2 (non-blocking), created for defining and testing a standard method of serial communication that allows both
+  This is a 5-NeoPixel control program for Marleen's lamp, Sept 2016. It is base on the BalloonLamp generic serial control V2 (non-blocking), created for defining and testing a standard method of serial communication that allows both
   1. realtime, quick-changing control, as well as
   2. (slow) transfer of larger amounts of data.
 
@@ -84,8 +84,8 @@ decode_results results;
 byte IRModeState = 0;
 byte PrevIRModeState = 0; // To carry over the previous mode to be able to iterate through table
 unsigned long LastIRReceived = 0;
-unsigned long IRMuteTime = 800; //once a button click is read, it's ignored for ButtenClickTimer ms
-byte IRModeModeTable[11] = { 30, 31, 32, 33, 34, 40, 2, 3, 4, 5, 1 }; // determines which presets, and in what order are cycled
+unsigned long IRMuteTime = 500; //once a button click is read, it's ignored for ButtenClickTimer ms
+byte IRModeModeTable[12] = { 30, 31, 32, 33, 34, 42, 40, 2, 3, 4, 5, 1 }; // determines which presets, and in what order are cycled
 
 
 //DIAGNOSTIC TOOLS
@@ -146,7 +146,7 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
   Serial.println("]0"); // start value for host program: 0 bytes in buffer
 
-  IRModeState = 30;
+  IRModeState = 0;
   Mode = 30;
 }
 //**********************************************************
@@ -201,7 +201,7 @@ void loop()
         break;
 
       }
-      
+
     case 0: { //do nothing
         // THIS IS A SIMPLE TEST RUN, UNCOMMENT TO HAVE ALL LEDS (up to 60) blinking
         //if (LoopIteration % 2)
@@ -220,7 +220,7 @@ void loop()
         //        strip.show();
         break;
       }
-      
+
     case 1: {// All off
         //one-off mode: do something, then set mode to '0' so no further changes
         for (int i = 0; i < strip.numPixels(); i++) {
@@ -292,7 +292,7 @@ void loop()
         //        Mode = 0;
         break;
       }
-    
+
     case 6: { //manual every LED different
 
 
@@ -321,6 +321,12 @@ void loop()
       }
     case 41: {
         rainbowCycle(20);
+        break;
+      }
+
+    case 42:
+      {
+        TwoPinkBounce(60);
         break;
       }
 
@@ -681,7 +687,7 @@ void ReadIRRemote() {
     if (go) {
       digitalWrite(IRBusyLedPin, HIGH);
       IRModeState++;
-      if (IRModeState > 11) {
+      if (IRModeState > 12) {
         IRModeState = 0;
       }
       Mode = IRModeModeTable[IRModeState];
@@ -829,6 +835,44 @@ uint32_t Wheel(byte WheelPos) {
     return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
   }
 }
+
+void TwoPinkBounce(uint8_t wait ) {
+
+  uint16_t i;
+  int rnow = 0;
+  int gnow = 0 ;
+  int bnow = 0;
+
+  if ((LoopStartMillis - LastDynamicModeAction) > wait) { //is it time to update?
+    LastDynamicModeAction = LoopStartMillis;
+    DynamicModeStep++;
+
+    // 255 0 50 to 180 0 180
+    if (DynamicModeStep > 50) {
+      DynamicModeStep = 0;
+    }
+
+    if (DynamicModeStep < 26) {
+      rnow = 180 + DynamicModeStep * 3;
+      gnow = 0;
+      bnow = 180 - DynamicModeStep * 5;
+    }
+    else
+    { // reverse direction
+      rnow = 255 - (DynamicModeStep -25) * 3;
+      gnow = 0;
+      bnow = 50 + (DynamicModeStep -25) * 5;
+    }
+ 
+  for (i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, strip.Color(rnow, gnow, bnow));
+  }
+  strip.show();
+} //end it's time to update
+}// end rainbow
+
+
+
 void rainbow(uint8_t wait) {
   uint16_t i;
 
